@@ -1,0 +1,65 @@
+# Node Information
+# Customizar
+# Para melhor reaproveitamento do arquivo, alguns atributos podem ser definidos como variáveis de ambiente
+# Exemplo: O atributo identity pode ser utilizado como variável de ambiente BESU_IDENTITY. --rpc-http-enabled = BESU_RPC_HTTP_ENABLED
+revert-reason-enabled=true
+genesis-file="/opt/besu/genesis.json"
+data-path="/opt/besu/data"
+
+logging="INFO"
+
+# DOCKER | KUBERNETES | AUTO | NONE
+# Customizar
+nat-method="AUTO"
+
+min-gas-price=0
+
+# P2P network
+p2p-enabled=true
+discovery-enabled=true
+p2p-host="0.0.0.0"
+p2p-port=30303
+max-peers=25
+remote-connections-limit-enabled=false
+
+# JSON-RPC
+host-allowlist=["*"]
+rpc-http-api=["DEBUG", "ETH", "ADMIN", "WEB3", "QBFT", "NET", "PERM", "TXPOOL", "PLUGINS", "MINER", "TRACE"]
+rpc-http-cors-origins=["*"]
+rpc-http-enabled=false
+rpc-http-max-active-connections=2000
+#rpc-http-authentication-enabled=true
+#rpc-http-authentication-credentials-file="/etc/auth/auth.toml"
+
+# GRAPHQL-RPC
+graphql-http-enabled=false
+graphql-http-host="0.0.0.0"
+graphql-http-port=8547
+graphql-http-cors-origins=["*"]
+
+# WebSockets API
+rpc-ws-enabled=false
+rpc-ws-host="0.0.0.0"
+rpc-ws-port=8546
+rpc-ws-api=["DEBUG", "ETH", "ADMIN", "WEB3", "QBFT", "NET", "PERM", "TXPOOL", "PLUGINS", "MINER", "TRACE"]
+rpc-ws-authentication-enabled=false
+
+# Metrics
+metrics-enabled=true
+metrics-host="0.0.0.0"
+metrics-port=9545
+
+Xdns-enabled=true
+
+# Permissioning (utilizar esses paramêtros para habilitar a permissão)
+# permissions-nodes-contract-enabled=true
+# permissions-nodes-contract-address="0x0000000000000000000000000000000000009999"
+# permissions-nodes-contract-version=2
+# permissions-accounts-contract-enabled=true
+# permissions-accounts-contract-address="0xb3f31049dADf7Ab0239afc2f04568CB19543044D"
+ permissions-nodes-config-file-enabled=true
+ permissions-nodes-config-file="/opt/besu/permissions-config.toml"
+
+# bootnodes
+
+

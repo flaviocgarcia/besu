@@ -1,0 +1,236 @@
+version: "3.6"
+
+networks:
+  besu-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.240.0/24
+
+services:
+    validador-serpro-1:
+        container_name: validador-serpro-1
+        image: hyperledger/besu:23.10.1
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                sleep 0;
+                /opt/besu/bin/besu                 --config-file=/opt/besu/config.toml
+        volumes:
+            - ./config/config.toml:/opt/besu/config.toml
+            - ./config/genesis.json:/opt/besu/genesis.json
+            - ./config/permissions-config.toml:/opt/besu/permissions-config.toml
+            - ./nodes/validador-serpro-1/data:/opt/besu/data
+        environment:
+            - BESU_IDENTITY=validador-serpro-1
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.30
+        ports:
+            - 30310:30303
+            - 8540:8545
+            - 9540:9545
+    validador-serpro-2:
+        container_name: validador-serpro-2
+        image: hyperledger/besu:23.10.1
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                sleep 10;
+                /opt/besu/bin/besu                 --config-file=/opt/besu/config.toml
+        volumes:
+            - ./config/config.toml:/opt/besu/config.toml
+            - ./config/genesis.json:/opt/besu/genesis.json
+            - ./config/permissions-config.toml:/opt/besu/permissions-config.toml
+            - ./nodes/validador-serpro-2/data:/opt/besu/data
+        environment:
+            - BESU_IDENTITY=validador-serpro-2
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.31
+        ports:
+            - 30311:30303
+            - 8541:8545
+            - 9541:9545
+    validador-serpro-3:
+        container_name: validador-serpro-3
+        image: hyperledger/besu:23.10.1
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                sleep 20;
+                /opt/besu/bin/besu                 --config-file=/opt/besu/config.toml
+        volumes:
+            - ./config/config.toml:/opt/besu/config.toml
+            - ./config/genesis.json:/opt/besu/genesis.json
+            - ./config/permissions-config.toml:/opt/besu/permissions-config.toml
+            - ./nodes/validador-serpro-3/data:/opt/besu/data
+        environment:
+            - BESU_IDENTITY=validador-serpro-3
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.32
+        ports:
+            - 30312:30303
+            - 8542:8545
+            - 9542:9545
+    fullnode-serpro-1:
+        container_name: fullnode-serpro-1
+        image: hyperledger/besu:23.10.1
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                sleep 30;
+                /opt/besu/bin/besu                 --config-file=/opt/besu/config.toml
+        volumes:
+            - ./config/config.toml:/opt/besu/config.toml
+            - ./config/genesis.json:/opt/besu/genesis.json
+            - ./config/permissions-config.toml:/opt/besu/permissions-config.toml
+            - ./nodes/fullnode-serpro-1/data:/opt/besu/data
+        environment:
+            - BESU_IDENTITY=fullnode-serpro-1
+            - BESU_RPC_HTTP_ENABLED=true
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.33
+        ports:
+            - 30313:30303
+            - 8543:8545
+            - 9543:9545
+    explorer:
+        image: consensys/quorum-explorer:latest
+        volumes:
+            - ./quorum-explorer/config.json:/app/config.json
+            - ./quorum-explorer/.env:/app/.env.production
+        depends_on:
+            - fullnode-serpro-1
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.34
+        ports:
+            - 25000:25000/tcp
+    redis-db:
+        extends:
+            file: ./blockscout/services/redis.yml
+            service: redis-db
+        depends_on:
+            - fullnode-serpro-1
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.35
+    db-init:
+        extends:
+            file: ./blockscout/services/db.yml
+            service: db-init
+        depends_on:
+            - fullnode-serpro-1
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.36
+    db:
+        depends_on:
+            db-init:
+                condition: service_completed_successfully
+        extends:
+            file: ./blockscout/services/db.yml
+            service: db
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.37
+    backend:
+        depends_on:
+            - db
+            - redis-db
+            - fullnode-serpro-1
+        extends:
+            file: ./blockscout/services/backend.yml
+            service: backend
+        build:
+            context: ..
+            dockerfile: ./docker/Dockerfile
+            args:
+                CACHE_EXCHANGE_RATES_PERIOD: ""
+                API_V1_READ_METHODS_DISABLED: "false"
+                DISABLE_WEBAPP: "false"
+                API_V1_WRITE_METHODS_DISABLED: "false"
+                CACHE_TOTAL_GAS_USAGE_COUNTER_ENABLED: ""
+                CACHE_ADDRESS_WITH_BALANCES_UPDATE_INTERVAL: ""
+                NETWORK: "DREX"
+                SUBNETWORK: "DREX Demo"
+                ADMIN_PANEL_ENABLED: ""
+                RELEASE_VERSION: 6.3.0
+        links:
+            - db:database
+        environment:
+            ETHEREUM_JSONRPC_HTTP_URL: http://fullnode-serpro-1:8545
+            ETHEREUM_JSONRPC_TRACE_URL: http://fullnode-serpro-1:8545
+            CHAIN_ID: '381660001'
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.38
+    visualizer:
+        extends:
+            file: ./blockscout/services/visualizer.yml
+            service: visualizer
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.39
+    sig-provider:
+        extends:
+            file: ./blockscout/services/sig-provider.yml
+            service: sig-provider
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.40
+    frontend:
+        depends_on:
+            - backend
+        extends:
+            file: ./blockscout/services/frontend.yml
+            service: frontend
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.41
+    stats-db-init:
+        extends:
+            file: ./blockscout/services/stats.yml
+            service: stats-db-init
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.42
+    stats-db:
+        depends_on:
+            stats-db-init:
+                condition: service_completed_successfully
+        extends:
+            file: ./blockscout/services/stats.yml
+            service: stats-db
+
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.43
+    stats:
+        depends_on:
+            - stats-db
+            - backend
+        extends:
+            file: ./blockscout/services/stats.yml
+            service: stats
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.44
+    proxy:
+        depends_on:
+            - backend
+            - frontend
+            - stats
+        extends:
+            file: ./blockscout/services/nginx.yml
+            service: proxy
+        networks:
+            besu-network:
+                ipv4_address: 172.16.240.45
